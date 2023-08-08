@@ -2,11 +2,11 @@ CREATE OR REPLACE PROCEDURE insert_verse(bible_name text, book_name text, chapte
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    bible_id integer;
-    book_id integer;
-    chapter_id integer;
+bible_id integer;
+book_id integer;
+chapter_id integer;
 BEGIN
-    
+
     SELECT id INTO bible_id FROM Bibles WHERE name = bible_name LIMIT 1;
     IF bible_id IS NULL THEN
         INSERT INTO Bibles (name) VALUES (bible_name) RETURNING id INTO bible_id;
@@ -22,7 +22,9 @@ BEGIN
         INSERT INTO Chapters (book_id, chapter) VALUES (book_id, chapter_number) RETURNING id INTO chapter_id;
     END IF;
 
-    INSERT INTO Verses (chapter_id, verse_num, scripture) VALUES (chapter_id, verse_number, scripture);
-
+    SELECT id INTO verse_id FROM Verses as v where v.verse_num = verse_number and v.chapter_id = chapter_id;
+    if verse_id IS NULL THEN
+        INSERT INTO Verses (chapter_id, verse_num, scripture) VALUES (chapter_id, verse_number, scripture);
+    END IF;
 END;
 $$;

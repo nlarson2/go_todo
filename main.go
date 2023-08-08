@@ -2,14 +2,15 @@ package main
 
 import (
     "os"
-    // "io"
+    "io"
     "fmt"
-    // "net/http"
+    "log"
+    "strconv"
+    "net/http"
     "github.com/joho/godotenv"
-    // "github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
     "database/sql"
     _ "github.com/lib/pq"
-    "log"
     
 )
 
@@ -76,55 +77,64 @@ func main() {
     router.POST("/verse/add", func(c *gin.Context) {
         bible_name := c.PostForm("bible_name")
         book_name := c.PostForm("book_name")
-        chapter_num := c.PostForm("chapter_num")
-        verse_num := c.PostForm("verse_num")
+        chapter_num, err1 :=  strconv.Atoi(c.PostForm("chapter_num"))
+        verse_num, err2 :=  strconv.Atoi(c.PostForm("verse_num"))
         verse_text := c.PostForm("verse_text")
+	if err1 != nil || err2 != nil {
+	    panic("Could not convert to integer")
+	}
+	
+	fmt.Printf("TEST: %s %s %d %d %s\n", bible_name, book_name, chapter_num, verse_num, verse_text )
+	result, err := db.Exec("EXECUTE insert_verse($1, $2, $3, $4, $5)", bible_name, book_name,chapter_num, verse_num, verse_text )
+	if err != nil {
+	    log.Fatal("Error calling stored procedure:", err)
+	}
+	fmt.Println(result)
 
-        
     })
     router.POST("/verse/update", func(c *gin.Context) {
-        name := c.PostForm("name")
-        fmt.Println(name)
+	name := c.PostForm("name")
+	fmt.Println(name)
     })
     router.POST("/verse/delete", func(c *gin.Context) {
-        name := c.PostForm("name")
-        fmt.Println(name)
+	name := c.PostForm("name")
+	fmt.Println(name)
     })
-
-    err = router.Run(os.Getenv("URL") + ":" + os.Getenv("PORT"))
+    fmt.Println(os.Getenv("PORT"))
+    err = router.Run(":" + os.Getenv("PORT"))
     if err != nil {
-        panic(err)
+	panic(err)
     }
 
 
-   
+
 }
 
 
 
-    // // Query data from the database
-    // rows, err := db.Query("SELECT name FROM bibles")
-	// if err != nil {
-	// 	log.Fatal("Error executing query:", err)
-	// }
-	// defer rows.Close()
+// // Query data from the database
+// rows, err := db.Query("SELECT name FROM bibles")
+// if err != nil {
+// 	log.Fatal("Error executing query:", err)
+// }
+// defer rows.Close()
 
-	// // Store the table names in a slice
-	// var tableNames []string
-	// for rows.Next() {
-	// 	var tableName string
-	// 	if err := rows.Scan(&tableName); err != nil {
-	// 		log.Fatal("Error scanning row:", err)
-	// 	}
-	// 	tableNames = append(tableNames, tableName)
-	// }
+// // Store the table names in a slice
+// var tableNames []string
+// for rows.Next() {
+// 	var tableName string
+// 	if err := rows.Scan(&tableName); err != nil {
+// 		log.Fatal("Error scanning row:", err)
+// 	}
+// 	tableNames = append(tableNames, tableName)
+// }
 
-	// if err = rows.Err(); err != nil {
-	// 	log.Fatal("Error retrieving query results:", err)
-	// }
+// if err = rows.Err(); err != nil {
+// 	log.Fatal("Error retrieving query results:", err)
+// }
 
-	// // Print the table names
-	// fmt.Println("Table Names:")
-	// for _, tableName := range tableNames {
-	// 	fmt.Println(tableName)
-	// }
+// // Print the table names
+// fmt.Println("Table Names:")
+// for _, tableName := range tableNames {
+// 	fmt.Println(tableName)
+// }

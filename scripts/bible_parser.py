@@ -1,8 +1,9 @@
 import re
 import os
 import requests
+import json 
 
-url = "localhost:8080"
+url = "http://192.168.1.66:8080/verse/add"
 
 bible_template = """
 {
@@ -67,7 +68,8 @@ with open('./bibles/Bible_English_ESV.xml') as f:
             
             if None not in [bible, book, chap, vers, vers_str]:
                 print(bible, book, chap, vers, vers_str)
-                response = requests.post(
+                response = requests.request(
+                    "POST",
                     url,
                     data={
                         "bible_name": bible,
@@ -76,10 +78,13 @@ with open('./bibles/Bible_English_ESV.xml') as f:
                         "verse_num": vers,
                         "verse_text": vers_str
                         
-                    }
+                    },
+#                    headers={"Content-Type": "multipart/form-data"},
                 )
-                csv.write(item_divider.join([bible, book, chap, vers, vers_str]) + "\n")
-
+                break
+                
+                # csv.write(item_divider.join([bible, book, chap, vers, vers_str]) + "\n")
+    exit()
     with open('./bibles/{0}.txt'.format(bible_csv_file)) as f:
         lines = f.readlines()
         verses = []
