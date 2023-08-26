@@ -19,42 +19,7 @@ import (
 )
 
 
-type Bible struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
 
-type Book struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type Verse struct {
-    Scripture string `json:"scripture"`
-}
-
-
-
-
-func connectDB( username string, password string, db_host string, db_name string, port int) (*sql.DB, error) {
-    // Replace with your actual database connection string
-    
-    connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", username, password, db_name, db_host, port)
-    // fmt.Println(connectionString)
-    // Open the database connection
-    db, err := sql.Open("postgres", connectionString)
-    if err != nil {
-	return nil, err
-    }
-
-    // Check if the connection is successful
-    if err = db.Ping(); err != nil {
-	return nil, err
-    }
-
-    fmt.Println("Connected to PostgreSQL!")
-    return db, nil
-}
 
 
 
@@ -63,25 +28,7 @@ func main() {
 
     //create log
     f, _ := os.Create("gin.log")
-    err := godotenv.Load(".env")
-    if err != nil {
-    	panic(err)
-    }
-
-    username := os.Getenv("DB_USER")
-    password := os.Getenv("DB_PASSWORD")
-    dbname := os.Getenv("DB_NAME")
-    dbhost := os.Getenv("DB_HOST")
-
-    db, err := connectDB(username, password, dbhost, dbname, 5432)
-    if err != nil {
-	    fmt.Println("Error connecting to the database:", err)
-	    return
-    }
-    fmt.Println("CONNECTED")
-    defer db.Close()
-
-
+    
     gin.DefaultWriter = io.MultiWriter(f)
     router := gin.Default()
 
@@ -92,7 +39,7 @@ func main() {
         })
     })
 
-    
+
     routes.InitVerseRoutes(router)
 
 

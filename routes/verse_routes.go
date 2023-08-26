@@ -2,23 +2,36 @@ package routes
 
 
 import (
-    "os"
-    "io"
     "fmt"
-    "log"
     "strconv"
     "strings"
     "net/http"
     "encoding/json"
-    "database/sql"
 
-    "github.com/joho/godotenv"
     "github.com/gin-gonic/gin"
+	"github.com/nlarson2/verse_search/db"
     _ "github.com/lib/pq"
     
 )
 
-funct InitVerseRoutes(r *gin.Engine) {
+
+type Bible struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Book struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Verse struct {
+    Scripture string `json:"scripture"`
+}
+
+
+
+func InitVerseRoutes(r *gin.Engine) {
 	verseGroup := r.Group("/verse")
 	{
 		verseGroup.GET("/bibles", getAllBibles)
@@ -28,10 +41,14 @@ funct InitVerseRoutes(r *gin.Engine) {
 }
 
 
-
-
 //get list of bible versions
 func getAllBibles(c *gin.Context) {
+	db, err := db.connectDB()
+    if err != nil {
+	    fmt.Println("Error connecting to the database:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
+	    return
+    }
 	rows, err := db.Query("select * from bible_versions")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute DB operation"})
@@ -65,6 +82,12 @@ func getAllBibles(c *gin.Context) {
 
 //get list of books
 func getAllBooks(c *gin.Context) {
+	db, err := db.connectDB()
+    if err != nil {
+	    fmt.Println("Error connecting to the database:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
+	    return
+    }
 	rows, err := db.Query("select * from books")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute DB operation"})
@@ -97,6 +120,14 @@ func getAllBooks(c *gin.Context) {
 
 //get range of verses
 func queryVerse(c *gin.Context) {
+
+	db, err := db.connectDB()
+    if err != nil {
+	    fmt.Println("Error connecting to the database:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
+	    return
+    }
+
 	version := c.Param("version")
 	book := c.Param("book")
 	chapter := c.Param("chapter")
