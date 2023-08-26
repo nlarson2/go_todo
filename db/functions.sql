@@ -2,29 +2,25 @@ CREATE OR REPLACE PROCEDURE insert_verse(bible_name text, book_name text, chapte
 LANGUAGE plpgsql
 AS $$
 DECLARE
-bible_id integer;
-book_id integer;
-chapter_id integer;
+bible_pk integer;
+book_pk integer;
+chapter_pk integer;
+verse_pk integer;
 BEGIN
 
-    SELECT id INTO bible_id FROM Bibles WHERE name = bible_name LIMIT 1;
-    IF bible_id IS NULL THEN
-        INSERT INTO Bibles (name) VALUES (bible_name) RETURNING id INTO bible_id;
+	SELECT id INTO bible_pk FROM Bible_Versions WHERE name = bible_name LIMIT 1;
+    IF bible_pk IS NULL THEN
+        INSERT INTO Bible_Versions (name) VALUES (bible_name) RETURNING id INTO bible_pk;
     END IF;
 
-    SELECT id INTO book_id FROM Books as bk WHERE bk.name = book_name and bk.bible_id = bible_id;
-    IF book_id IS NULL THEN
-        INSERT INTO Books (bible_id, name) VALUES (bible_id, book_name) RETURNING id INTO book_id;
+    SELECT id INTO book_pk FROM Books as bk WHERE bk.name = book_name;
+    IF book_pk IS NULL THEN
+        INSERT INTO Books (name) VALUES (book_name) RETURNING id INTO book_pk;
     END IF;
-
-    SELECT id INTO chapter_id FROM Chapters as c where c.chapter = chapter_number and c.book_id = book_id;
-    if chapter_id IS NULL THEN
-        INSERT INTO Chapters (book_id, chapter) VALUES (book_id, chapter_number) RETURNING id INTO chapter_id;
-    END IF;
-
-    SELECT id INTO verse_id FROM Verses as v where v.verse_num = verse_number and v.chapter_id = chapter_id;
-    if verse_id IS NULL THEN
-        INSERT INTO Verses (chapter_id, verse_num, scripture) VALUES (chapter_id, verse_number, scripture);
-    END IF;
+	
+	SELECT id INTO verse_pk FROM Verses as v where v.verse_num = verse_number and v.chapter_num = chapter_number and  v.book_id = book_pk and v.bible_id = bible_pk;
+	if verse_pk IS NULL THEN
+    	INSERT INTO Verses (bible_id, book_id, chapter_num, verse_num, scripture) VALUES (bible_pk, book_pk, chapter_number, verse_number, scripture);
+	END IF;
 END;
 $$;

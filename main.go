@@ -6,13 +6,35 @@ import (
     "fmt"
     "log"
     "strconv"
+    "strings"
     "net/http"
+    "encoding/json"
+    "database/sql"
+
     "github.com/joho/godotenv"
     "github.com/gin-gonic/gin"
-    "database/sql"
+    "github.com/nlarson2/verse_search/routes"
     _ "github.com/lib/pq"
     
 )
+
+
+type Bible struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Book struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Verse struct {
+    Scripture string `json:"scripture"`
+}
+
+
+
 
 func connectDB( username string, password string, db_host string, db_name string, port int) (*sql.DB, error) {
     // Replace with your actual database connection string
@@ -33,6 +55,9 @@ func connectDB( username string, password string, db_host string, db_name string
     fmt.Println("Connected to PostgreSQL!")
     return db, nil
 }
+
+
+
 
 func main() {
 
@@ -67,49 +92,18 @@ func main() {
         })
     })
 
+    
+    routes.InitVerseRoutes(router)
 
-    //get list of bible versions
-    //get list of books
-    //get list of chapters
-    //get range of verses
-        //limit to # of verses
 
-    router.POST("/verse/add", func(c *gin.Context) {
-        bible_name := c.PostForm("bible_name")
-        book_name := c.PostForm("book_name")
-        chapter_num, err1 :=  strconv.Atoi(c.PostForm("chapter_num"))
-        verse_num, err2 :=  strconv.Atoi(c.PostForm("verse_num"))
-        verse_text := c.PostForm("verse_text")
-	if err1 != nil || err2 != nil {
-	    panic("Could not convert to integer")
-	}
-	
-	fmt.Printf("TEST: %s %s %d %d %s\n", bible_name, book_name, chapter_num, verse_num, verse_text )
-	result, err := db.Exec("EXECUTE insert_verse($1, $2, $3, $4, $5)", bible_name, book_name,chapter_num, verse_num, verse_text )
-	if err != nil {
-	    log.Fatal("Error calling stored procedure:", err)
-	}
-	fmt.Println(result)
-
-    })
-    router.POST("/verse/update", func(c *gin.Context) {
-	name := c.PostForm("name")
-	fmt.Println(name)
-    })
-    router.POST("/verse/delete", func(c *gin.Context) {
-	name := c.PostForm("name")
-	fmt.Println(name)
-    })
     fmt.Println(os.Getenv("PORT"))
     err = router.Run(":" + os.Getenv("PORT"))
     if err != nil {
-	panic(err)
+        panic(err)
     }
 
 
-
 }
-
 
 
 // // Query data from the database
