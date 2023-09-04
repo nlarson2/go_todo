@@ -25,31 +25,26 @@ type Book struct {
 	Name string `json:"name"`
 }
 
-type Verse struct {
-    Scripture string `json:"scripture"`
-}
-
-
 
 func InitVerseRoutes(r *gin.Engine) {
-	verseGroup := r.Group("/verse")
-	{
-		verseGroup.GET("/bibles", getAllBibles)
-		verseGroup.GET("/books", getAllBooks)
-		verseGroup.GET("/verse/:version/:book/:chapter/:verse?", queryVerse)
-	}
+	r.GET("/bibles", getAllBibles)
+	r.GET("/books", getAllBooks)
+	r.GET("/verse", queryVerse)
+	r.POST("/verse/add", addVerse)
 }
 
 
 //get list of bible versions
 func getAllBibles(c *gin.Context) {
-	db, err := db.connectDB()
+	conn, err := db.ConnectDB()
     if err != nil {
 	    fmt.Println("Error connecting to the database:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
 	    return
     }
-	rows, err := db.Query("select * from bible_versions")
+	defer conn.Close()
+
+	rows, err := conn.Query("select * from bible_versions")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute DB operation"})
 		return
@@ -82,13 +77,15 @@ func getAllBibles(c *gin.Context) {
 
 //get list of books
 func getAllBooks(c *gin.Context) {
-	db, err := db.connectDB()
+	conn, err := db.ConnectDB()
     if err != nil {
 	    fmt.Println("Error connecting to the database:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
 	    return
     }
-	rows, err := db.Query("select * from books")
+	defer conn.Close()
+
+	rows, err := conn.Query("select * from books")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute DB operation"})
 		return
@@ -121,65 +118,154 @@ func getAllBooks(c *gin.Context) {
 //get range of verses
 func queryVerse(c *gin.Context) {
 
-	db, err := db.connectDB()
+	version := c.Query("bible")
+	if version == "" {
+		version = "ENGLISHESV"
+	}
+	book := c.Query("book")
+	chapter := c.Query("chapter")
+	verse := c.Query("verse")
+	
+	var verse_range []string
+
+	fmt.Printf("TEST: %s %s %s %s\n", version, book, chapter, verse )
+	if book == "" || chapter == "" || verse == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Not a valid request"})
+		return
+	}
+
+	
+	if strings.Contains(verse, "-") {
+		verse_range = strings.Split(verse, "-")
+		if len(verse_range) != 2 {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create JSON response"})
+			return
+		}
+		fmt.Printf("%d\n", len(verse_range))
+	}
+
+	conn, err := db.ConnectDB()
     if err != nil {
 	    fmt.Println("Error connecting to the database:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
 	    return
     }
+	defer conn.Close()
 
-	version := c.Param("version")
-	book := c.Param("book")
-	chapter := c.Param("chapter")
-	verse := c.Param("verse")
-	var values []string
-
-	
-	if strings.Contains(verse, "-") {
-		values = strings.Split(verse, "-")
-		if len(values) != 2 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create JSON response"})
-			return
-		}
-		fmt.Printf("%d\n", len(values))
-	}
-	
-	fmt.Printf("TEST: %s %s %s %s\n", version, book, chapter, verse )
-	if len(values) > 1 {
-		first_id, err1 := strconv.Atoi(values[0])
-		last_id, err2 := strconv.Atoi(values[1])
+	if len(verse_range) > 1 {
+		first_v, err1 := strconv.Atoi(verse_range[0])
+		last_v, err2 := strconv.Atoi(verse_range[1])
 		if err1 != nil || err2 != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create JSON response"})
 			return
 		}
-		fmt.Printf("%d-%d\n", first_id, last_id)
-	}
+		
+		verse_count := last_v - first_v
+		if verse_count < 0 || verse_count > 50 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Not a valid request"})
+			return
+		}
 
+		rows, err := conn.Query( 
+			"select * from get_range_of_verses($1, $2, $3, $4, $5)", 
+			version, book, chapter, first_v, last_v, 
+		)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		var result []struct {
+			BookName      string
+			ChapterNumber int
+			VerseNumber   int
+			Scripture     string
+		}
 	
-	c.JSON(http.StatusOK, gin.H{"test": "test"})
-	return
+		// Iterate through the result set and scan rows into the result slice
+		for rows.Next() {
+			var verse struct {
+				BookName      string
+				ChapterNumber int
+				VerseNumber   int
+				Scripture     string
+			}
+			if err := rows.Scan(
+				&verse.BookName,
+				&verse.ChapterNumber,
+				&verse.VerseNumber,
+				&verse.Scripture,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			result = append(result, verse)
+		}
+	
+		// Handle any errors that may have occurred during iteration
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	
+		// Return the result as JSON
+		c.JSON(http.StatusOK, result)
+		return
 
+
+	} else {
+		var result struct {
+			BookName      string
+			ChapterNumber int
+			VerseNumber   int
+			Scripture     string
+		}	
+		err := conn.QueryRow( 
+			"select * from get_single_verse($1, $2, $3, $4)", 
+			version, book, chapter, verse, 
+		).Scan(&result.BookName, &result.ChapterNumber, &result.VerseNumber, &result.Scripture)
+		if err != nil {
+			fmt.Println("Error calling stored procedure:", err)
+		}
+		fmt.Println(result)
+		c.JSON(http.StatusOK, gin.H{"results": result})
+		return
+	}
+	
+	
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create JSON response"})
+	return
 	
 }
 
-// router.POST("/verse/add", func(c *gin.Context) {
-// 	bible_name := c.PostForm("bible_name")
-// 	book_name := c.PostForm("book_name")
-// 	chapter_num, err1 :=  strconv.Atoi(c.PostForm("chapter_num"))
-// 	verse_num, err2 :=  strconv.Atoi(c.PostForm("verse_num"))
-// 	verse_text := c.PostForm("verse_text")
-// 	if err1 != nil || err2 != nil {
-// 		panic("Could not convert to integer")
-// 	}
-	
-// 	fmt.Printf("TEST: %s %s %d %d %s\n", bible_name, book_name, chapter_num, verse_num, verse_text )
-// 	result, err := db.Exec("CALL insert_verse($1, $2, $3, $4, $5)", bible_name, book_name, chapter_num, verse_num, verse_text )
-// 	if err != nil {
-// 		log.Fatal("Error calling stored procedure:", err)
-// 	}
-// 	fmt.Println(result)
+func addVerse(c *gin.Context) {
 
-// })
+	conn, err := db.ConnectDB()
+    if err != nil {
+	    fmt.Println("Error connecting to the database:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error connecting to the database:"})
+	    return
+    }
+	defer conn.Close()
+
+	bible_name := c.PostForm("bible_name")
+	book_name := c.PostForm("book_name")
+	chapter_num, err1 :=  strconv.Atoi(c.PostForm("chapter_num"))
+	verse_num, err2 :=  strconv.Atoi(c.PostForm("verse_num"))
+	verse_text := c.PostForm("verse_text")
+	if err1 != nil || err2 != nil {
+		panic("Could not convert to integer")
+	}
+	
+	fmt.Printf("TEST: %s %s %d %d %s\n", bible_name, book_name, chapter_num, verse_num, verse_text )
+	result, err := conn.Exec("CALL insert_verse($1, $2, $3, $4, $5)", bible_name, book_name, chapter_num, verse_num, verse_text )
+	if err != nil {
+		fmt.Println("Error calling stored procedure:", err)
+	}
+	fmt.Println(result)
+
+}
 // router.POST("/verse/update", func(c *gin.Context) {
 // 	name := c.PostForm("name")
 // 	fmt.Println(name)

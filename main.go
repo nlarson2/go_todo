@@ -4,13 +4,9 @@ import (
     "os"
     "io"
     "fmt"
-    "log"
-    "strconv"
-    "strings"
     "net/http"
-    "encoding/json"
-    "database/sql"
 
+    
     "github.com/joho/godotenv"
     "github.com/gin-gonic/gin"
     "github.com/nlarson2/verse_search/routes"
@@ -26,6 +22,12 @@ import (
 
 func main() {
 
+
+    err := godotenv.Load(".env")
+    if err != nil {
+    	panic(err)
+    }
+
     //create log
     f, _ := os.Create("gin.log")
     
@@ -39,8 +41,8 @@ func main() {
         })
     })
 
-
     routes.InitVerseRoutes(router)
+
 
 
     fmt.Println(os.Getenv("PORT"))
