@@ -215,22 +215,54 @@ func queryVerse(c *gin.Context) {
 
 
 	} else {
-		var result struct {
+		
+		rows, err := conn.Query( 
+			"select * from get_single_verse($1, $2, $3, $4)", 
+			version, book, chapter, verse,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		
+		var result []struct {
 			BookName      string
 			ChapterNumber int
 			VerseNumber   int
 			Scripture     string
 		}	
-		err := conn.QueryRow( 
-			"select * from get_single_verse($1, $2, $3, $4)", 
-			version, book, chapter, verse, 
-		).Scan(&result.BookName, &result.ChapterNumber, &result.VerseNumber, &result.Scripture)
-		if err != nil {
-			fmt.Println("Error calling stored procedure:", err)
+
+		// Iterate through the result set and scan rows into the result slice
+		for rows.Next() {
+			var verse struct {
+				BookName      string
+				ChapterNumber int
+				VerseNumber   int
+				Scripture     string
+			}
+			if err := rows.Scan(
+				&verse.BookName,
+				&verse.ChapterNumber,
+				&verse.VerseNumber,
+				&verse.Scripture,
+			); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			result = append(result, verse)
 		}
-		fmt.Println(result)
-		c.JSON(http.StatusOK, gin.H{"results": result})
+
+		// Handle any errors that may have occurred during iteration
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Return the result as JSON
+		c.JSON(http.StatusOK, result)
 		return
+
+		
 	}
 	
 	

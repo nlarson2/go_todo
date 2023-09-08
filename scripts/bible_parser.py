@@ -61,7 +61,6 @@ for filename in os.listdir('./bibles'):
                 vers = vers_search.group(1)
                 vers_str = vers_search.group(2)
             else:
-                book=None
                 chap=None
                 vers=None
             
