@@ -16,9 +16,9 @@ const Scripture: React.FC<ScriptureProps> = (props: ScriptureProps) => {
         return (
             <Text style={{fontSize:18}} >
                 {parsedData.map((verse, index) => (
-                    <>
+                    <React.Fragment key={index}>
                     <SuperScript value={verse.VerseNumber}/>{verse.Scripture}
-                    </>
+                    </React.Fragment>
                 ))}
             </Text>
         )

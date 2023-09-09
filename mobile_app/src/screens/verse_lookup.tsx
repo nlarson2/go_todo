@@ -65,13 +65,13 @@ const VerseLookup: React.FC = () => {
       var key = `${book} ${chapter}:`;
       key += useRange ? `${verse1}-${verse2}` : `${verse1}`;
       var value = JSON.stringify(verseData)
-      if(await AsyncStorage.getItem(key) === null) {
+      if (await AsyncStorage.getItem(key) === null) {
         await AsyncStorage.setItem(key, value)
       }
       toggleModal()
     } catch (error) {
 
-    }   
+    }
   }
 
   const handleChapterChange = (text: string) => {
@@ -107,7 +107,7 @@ const VerseLookup: React.FC = () => {
     let verseAsString = "";
     for (let i = 0; i < verseData.length; i++) {
       const values: string[] = verseData[i].VerseNumber.toString().split('')
-      for( var str in values) (
+      for (var str in values) (
         verseAsString += scripts[parseInt(str)]
       )
       verseAsString += verseData[i].Scripture;
@@ -201,23 +201,26 @@ const VerseLookup: React.FC = () => {
         }}
         >
           <View style={styles.scrollView}>
-          <ScrollView>
-            {verseData.length > 0 ?
-              <Text style={{fontSize: 20}}>
-                {verseData.map((verse, index)=>(
-                  <>
-                  <SuperScript value={verse.VerseNumber}/>{verse.Scripture}
-                  </>
-                ))}
-              </Text>
-              : <></>
-            }
+            <ScrollView style={{alignContent: 'center'}}>
+              {verseData.length > 0 ?
+                <Text style={{ fontSize: 20 }}>
+                  {verseData.map((verse, index) => (
+                    <React.Fragment key={index}>
+                      <SuperScript value={verse.VerseNumber} />{verse.Scripture}
+                    </React.Fragment>
+                  ))}
+                </Text>
+                : <Text style={{textAlign: 'center', color: 'red', fontWeight: 'bold', fontSize: 20}}> Invalid Search </Text>
+              }
 
-          </ScrollView>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', backgroundColor:'#fff'}}>
-              <TouchableOpacity style={styles.button} onPress={() => saveSearch()}>
-                <Text style={{ color: "#fff" }}>Save</Text>
-              </TouchableOpacity>
+            </ScrollView>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', backgroundColor: '#fff' }}>
+              {verseData.length > 0 ?
+                <TouchableOpacity style={styles.button} onPress={() => saveSearch()}>
+                  <Text style={{ color: "#fff" }}>Save</Text>
+                </TouchableOpacity>
+                : <></>
+              }
               <TouchableOpacity style={styles.button} onPress={() => toggleModal()}>
                 <Text style={{ color: "#fff" }}>Close</Text>
               </TouchableOpacity>
