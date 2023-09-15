@@ -3,61 +3,37 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useIsMobile } from './hooks/Windows';
 import './App.css';
 
+import Home from './pages/Home';
+import Search from './pages/Search';
+
+
 const App: React.FC = () => {
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(800);
 
 
-  function DisplayLeft() {
-    return (
-      <>
-        {
-          isMobile == true ?
-            <div>NAV BAR</div>
-            :
-            <>  </>
-        }
-        test stuff
-      </>
-    )
-  }
-  function DisplayRight() {
-    return (
-      <>
-        {
-          isMobile == true ?
-            <div>NAV BAR</div>
-            :
-            <>  </>
-        }
-        test stuff right side
-      </>
-    )
-  }
 
   return (
-    <>
-      <div id="container">
+    <Router>
+      <div className="container">
         {!isMobile ?
           <>
             <div id="left-side">
-              {DisplayLeft()}
+              <Home />
             </div>
             <div id="right-side">
-              {DisplayRight()}
+              <Search />
             </div>
           </>
           :
           <>
-            <Router>
-              <Routes>
-                <Route path='/' element={DisplayLeft()} />
-                <Route path='/search' element={DisplayRight()} />
-              </Routes>
-            </Router>
+            <Routes>
+              <Route path='/' element={<Home />} />
+              <Route path='/search' element={<Search />} />
+            </Routes>
           </>
         }
       </div >
-    </>
+    </Router >
   )
 }
 

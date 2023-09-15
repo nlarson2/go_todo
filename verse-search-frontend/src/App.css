@@ -2,20 +2,23 @@ body {
   margin: 0;
   padding: 0;
 }
-#container {
+.container {
   display: flex;
   flex-direction: row;
   width: 100%;
 }
 
 #left-side {
-  background-color: blue;
   flex-grow: 6;
   margin: auto;
 }
 
 #right-side {
-  background-color: red;
   flex-grow: 6;
   margin: auto;
 }
+
+.page {
+  width: 100%;
+}
+
