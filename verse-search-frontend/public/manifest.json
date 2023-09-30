@@ -1,0 +1,13 @@
+{
+    "name": "Verse Search",
+    "display": "standalone",
+    "background_color": "#101b39",
+    "theme_color": "#101b39",
+    "icons": [
+        {
+            "src": "verse_search.png",
+            "size": "32x32"
+        }
+    ]
+
+}

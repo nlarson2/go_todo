@@ -1,7 +1,7 @@
 #navbar{
     width: "100%";
     background-color: #101b39;
-    padding: 40px;
+    padding: 10px;
     padding: 5px;
 }
 #navbar a{
@@ -9,20 +9,25 @@
     color:white;
 }
 #navbar #leftLink {
-    width: 15%;
+    width: 30%;
     display: inline-block;
     text-align: left;
+    font-weight: bold;
+    font-size: small;
 }
 #navbar #rightLink{
-    width: 15%;
+    width: 30%;
     display: inline-block;
     text-align: right;
+    font-weight: bold;
+    font-size: small;
 }
 
 #navbar #title { 
     color: white;
     text-align: center;
     font-weight: bold;
-    width: 70%;
+    width: 40%;
     display: inline-block;
+    font-size: 20px;
 }
